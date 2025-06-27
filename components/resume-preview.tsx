@@ -52,7 +52,7 @@ export function ResumePreview({ data, language }: ResumePreviewProps) {
   const handleDownloadPDF = async () => {
     const element = document.getElementById("resume-preview")
     if (element) {
-      await generatePDF(element, `${data.personalInfo.fullName || "resume"}-cv.pdf`)
+      await generatePDF(element, `${data.personalInfo.fullName || "resume"}-cv.pdf`, language)
     }
   }
 

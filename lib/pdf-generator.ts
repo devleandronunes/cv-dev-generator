@@ -1,7 +1,7 @@
 import type { ResumeData } from "@/types/resume"
 import { jsPDF } from "jspdf"
 
-export async function generatePDF(element: HTMLElement, filename: string) {
+export async function generatePDF(element: HTMLElement, filename: string, language: "en" | "pt" = "en") {
   try {
     const pdf = new jsPDF({
       orientation: "portrait",
@@ -16,7 +16,54 @@ export async function generatePDF(element: HTMLElement, filename: string) {
     const sectionSpacing = 8
     let yPosition = margin
 
-    // Get resume data from the element's data attribute
+    const translations = {
+      en: {
+        professionalSummary: "Professional Summary",
+        experience: "Professional Experience",
+        education: "Education",
+        skills: "Technical Skills",
+        languages: "Languages",
+        courses: "Courses & Certifications",
+        additionalInfo: "Additional Information",
+        present: "Present",
+        email: "Email",
+        phone: "Phone",
+        address: "Address",
+      },
+      pt: {
+        professionalSummary: "Resumo Profissional",
+        experience: "Experiência Profissional",
+        education: "Formação Acadêmica",
+        skills: "Habilidades Técnicas",
+        languages: "Idiomas",
+        courses: "Cursos e Certificações",
+        additionalInfo: "Informações Complementares",
+        present: "Atual",
+        email: "E-mail",
+        phone: "Telefone",
+        address: "Endereço",
+      },
+    }
+
+    const t = translations[language]
+
+    const socialLabels = {
+      en: {
+        linkedin: "LinkedIn",
+        github: "GitHub",
+        portfolio: "Portfolio",
+        linktree: "Linktree",
+      },
+      pt: {
+        linkedin: "LinkedIn",
+        github: "GitHub",
+        portfolio: "Portfólio",
+        linktree: "Linktree",
+      },
+    }
+
+    const socialT = socialLabels[language]
+
     const resumeDataElement = document.querySelector("[data-resume-data]")
     let resumeData: ResumeData | null = null
 
@@ -28,7 +75,6 @@ export async function generatePDF(element: HTMLElement, filename: string) {
       }
     }
 
-    // Helper function to add text with proper formatting
     const addText = (
       text: string,
       fontSize = 10,
@@ -57,37 +103,52 @@ export async function generatePDF(element: HTMLElement, filename: string) {
       })
     }
 
-    // Helper function to add section header with thin line
     const addSectionHeader = (title: string) => {
       yPosition += sectionSpacing
       addText(title, 14, "bold")
-      // Add thin underline to section headers (matching preview)
       const textWidth = pdf.getTextWidth(title)
-      pdf.setLineWidth(0.2) // Thinner line
-      pdf.setDrawColor(200, 200, 200) // Light gray like in preview
+      pdf.setLineWidth(0.2)
+      pdf.setDrawColor(200, 200, 200)
       pdf.line(margin, yPosition - 2, margin + textWidth, yPosition - 2)
       yPosition += 2
     }
 
+    const translateProficiency = (proficiency: string) => {
+      if (language === "pt") {
+        switch (proficiency) {
+          case "beginner":
+            return "Iniciante"
+          case "intermediate":
+            return "Intermediário"
+          case "advanced":
+            return "Avançado"
+          case "fluent":
+            return "Fluente"
+          case "native":
+            return "Nativo"
+          default:
+            return proficiency
+        }
+      }
+      return proficiency.charAt(0).toUpperCase() + proficiency.slice(1)
+    }
+
     if (resumeData) {
-      // Personal Information
       if (resumeData.personalInfo.fullName) {
         addText(resumeData.personalInfo.fullName, 18, "bold")
         yPosition += 4
       }
 
-      // Contact Information
       if (resumeData.personalInfo.email) {
-        addText(`Email: ${resumeData.personalInfo.email}`)
+        addText(`${t.email}: ${resumeData.personalInfo.email}`)
       }
       if (resumeData.personalInfo.phone) {
-        addText(`Phone: ${resumeData.personalInfo.phone}`)
+        addText(`${t.phone}: ${resumeData.personalInfo.phone}`)
       }
       if (resumeData.personalInfo.address) {
-        addText(`Address: ${resumeData.personalInfo.address}`)
+        addText(`${t.address}: ${resumeData.personalInfo.address}`)
       }
 
-      // Social Links (label in black, URL in blue with thin blue underline)
       if (resumeData.personalInfo.linkedin) {
         if (yPosition > pageHeight - margin) {
           pdf.addPage()
@@ -97,8 +158,8 @@ export async function generatePDF(element: HTMLElement, filename: string) {
         pdf.setFontSize(10)
         pdf.setFont("helvetica", "normal")
         pdf.setTextColor(0, 0, 0)
-        pdf.text("LinkedIn: ", margin, yPosition)
-        const labelWidth = pdf.getTextWidth("LinkedIn: ")
+        pdf.text(`${socialT.linkedin}: `, margin, yPosition)
+        const labelWidth = pdf.getTextWidth(`${socialT.linkedin}: `)
 
         pdf.setTextColor(0, 0, 255)
         const fullUrl = resumeData.personalInfo.linkedin.startsWith("http")
@@ -107,7 +168,6 @@ export async function generatePDF(element: HTMLElement, filename: string) {
         const linkWidth = pdf.getTextWidth(resumeData.personalInfo.linkedin)
         pdf.textWithLink(resumeData.personalInfo.linkedin, margin + labelWidth, yPosition, { url: fullUrl })
 
-        // Thin blue underline for link
         pdf.setLineWidth(0.1)
         pdf.setDrawColor(0, 0, 255)
         pdf.line(margin + labelWidth, yPosition + 0.5, margin + labelWidth + linkWidth, yPosition + 0.5)
@@ -123,8 +183,8 @@ export async function generatePDF(element: HTMLElement, filename: string) {
         pdf.setFontSize(10)
         pdf.setFont("helvetica", "normal")
         pdf.setTextColor(0, 0, 0)
-        pdf.text("GitHub: ", margin, yPosition)
-        const labelWidth = pdf.getTextWidth("GitHub: ")
+        pdf.text(`${socialT.github}: `, margin, yPosition)
+        const labelWidth = pdf.getTextWidth(`${socialT.github}: `)
 
         pdf.setTextColor(0, 0, 255)
         const fullUrl = resumeData.personalInfo.github.startsWith("http")
@@ -133,7 +193,6 @@ export async function generatePDF(element: HTMLElement, filename: string) {
         const linkWidth = pdf.getTextWidth(resumeData.personalInfo.github)
         pdf.textWithLink(resumeData.personalInfo.github, margin + labelWidth, yPosition, { url: fullUrl })
 
-        // Thin blue underline for link
         pdf.setLineWidth(0.1)
         pdf.setDrawColor(0, 0, 255)
         pdf.line(margin + labelWidth, yPosition + 0.5, margin + labelWidth + linkWidth, yPosition + 0.5)
@@ -149,8 +208,8 @@ export async function generatePDF(element: HTMLElement, filename: string) {
         pdf.setFontSize(10)
         pdf.setFont("helvetica", "normal")
         pdf.setTextColor(0, 0, 0)
-        pdf.text("Portfolio: ", margin, yPosition)
-        const labelWidth = pdf.getTextWidth("Portfolio: ")
+        pdf.text(`${socialT.portfolio}: `, margin, yPosition)
+        const labelWidth = pdf.getTextWidth(`${socialT.portfolio}: `)
 
         pdf.setTextColor(0, 0, 255)
         const fullUrl = resumeData.personalInfo.portfolio.startsWith("http")
@@ -159,7 +218,6 @@ export async function generatePDF(element: HTMLElement, filename: string) {
         const linkWidth = pdf.getTextWidth(resumeData.personalInfo.portfolio)
         pdf.textWithLink(resumeData.personalInfo.portfolio, margin + labelWidth, yPosition, { url: fullUrl })
 
-        // Thin blue underline for link
         pdf.setLineWidth(0.1)
         pdf.setDrawColor(0, 0, 255)
         pdf.line(margin + labelWidth, yPosition + 0.5, margin + labelWidth + linkWidth, yPosition + 0.5)
@@ -175,8 +233,8 @@ export async function generatePDF(element: HTMLElement, filename: string) {
         pdf.setFontSize(10)
         pdf.setFont("helvetica", "normal")
         pdf.setTextColor(0, 0, 0)
-        pdf.text("Linktree: ", margin, yPosition)
-        const labelWidth = pdf.getTextWidth("Linktree: ")
+        pdf.text(`${socialT.linktree}: `, margin, yPosition)
+        const labelWidth = pdf.getTextWidth(`${socialT.linktree}: `)
 
         pdf.setTextColor(0, 0, 255)
         const fullUrl = resumeData.personalInfo.linktree.startsWith("http")
@@ -185,25 +243,22 @@ export async function generatePDF(element: HTMLElement, filename: string) {
         const linkWidth = pdf.getTextWidth(resumeData.personalInfo.linktree)
         pdf.textWithLink(resumeData.personalInfo.linktree, margin + labelWidth, yPosition, { url: fullUrl })
 
-        // Thin blue underline for link
         pdf.setLineWidth(0.1)
         pdf.setDrawColor(0, 0, 255)
         pdf.line(margin + labelWidth, yPosition + 0.5, margin + labelWidth + linkWidth, yPosition + 0.5)
         yPosition += lineHeight
       }
 
-      // Professional Summary
       if (resumeData.professionalSummary) {
-        addSectionHeader("Professional Summary")
+        addSectionHeader(t.professionalSummary)
         addText(resumeData.professionalSummary)
       }
 
-      // Experience
       if (resumeData.experience.length > 0) {
-        addSectionHeader("Professional Experience")
+        addSectionHeader(t.experience)
         resumeData.experience.forEach((exp) => {
           addText(`${exp.position} - ${exp.company}`, 11, "bold")
-          addText(`${exp.startDate} - ${exp.endDate || "Present"}`, 9)
+          addText(`${exp.startDate} - ${exp.endDate || t.present}`, 9)
           if (exp.description) {
             addText(exp.description, 10)
           }
@@ -211,33 +266,29 @@ export async function generatePDF(element: HTMLElement, filename: string) {
         })
       }
 
-      // Education
       if (resumeData.education.length > 0) {
-        addSectionHeader("Education")
+        addSectionHeader(t.education)
         resumeData.education.forEach((edu) => {
           addText(`${edu.degree} - ${edu.institution}`, 11, "bold")
-          addText(`${edu.startDate} - ${edu.endDate || "Present"}`, 9)
+          addText(`${edu.startDate} - ${edu.endDate || t.present}`, 9)
           yPosition += 3
         })
       }
 
-      // Skills
       if (resumeData.skills.length > 0) {
-        addSectionHeader("Technical Skills")
+        addSectionHeader(t.skills)
         addText(resumeData.skills.join(" - "))
       }
 
-      // Languages
       if (resumeData.languages.length > 0) {
-        addSectionHeader("Languages")
+        addSectionHeader(t.languages)
         resumeData.languages.forEach((lang) => {
-          addText(`${lang.language}: ${lang.proficiency}`)
+          addText(`${lang.language}: ${translateProficiency(lang.proficiency)}`)
         })
       }
 
-      // Courses
       if (resumeData.courses.length > 0) {
-        addSectionHeader("Courses & Certifications")
+        addSectionHeader(t.courses)
         resumeData.courses.forEach((course) => {
           let courseText = course.name
           if (course.institution) courseText += ` - ${course.institution}`
@@ -246,13 +297,11 @@ export async function generatePDF(element: HTMLElement, filename: string) {
         })
       }
 
-      // Additional Information
       if (resumeData.additionalInfo) {
-        addSectionHeader("Additional Information")
+        addSectionHeader(t.additionalInfo)
         addText(resumeData.additionalInfo)
       }
     } else {
-      // Fallback: extract text from DOM
       const textContent = element.innerText
       const lines = textContent.split("\n").filter((line) => line.trim())
       lines.forEach((line) => {
@@ -263,7 +312,6 @@ export async function generatePDF(element: HTMLElement, filename: string) {
     pdf.save(filename)
   } catch (error) {
     console.error("Error generating PDF:", error)
-    // Fallback to print
     window.print()
   }
 }
